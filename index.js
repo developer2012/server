@@ -6,18 +6,26 @@ const { Server } = require("socket.io");
 const app = express();
 const server = http.createServer(app);
 
-// Socket.io
+// Render or other hosting uses dynamic PORT
+const PORT = process.env.PORT || 3000;
+
+// Socket.io (Render’da ham ishlaydi)
 const io = new Server(server, {
-  cors: { origin: "*" } // local test uchun
+  cors: { origin: "*" } // keyin xavfsizlik uchun aniq domain qilamiz
 });
 
-// ✅ Frontendni serverdan beramiz (Cannot GET / fix)
+// ✅ Frontendni serverdan beramiz
 const clientPath = path.join(__dirname, "..", "client");
 app.use(express.static(clientPath));
 
 // ✅ Root route: index.html qaytaradi
 app.get("/", (req, res) => {
   res.sendFile(path.join(clientPath, "index.html"));
+});
+
+// ✅ Health check (Render uchun foydali)
+app.get("/health", (req, res) => {
+  res.json({ ok: true });
 });
 
 // Waiting queue
@@ -33,14 +41,14 @@ io.on("connection", (socket) => {
   socket.on("find", (level) => {
     if (!waiting[level]) return;
 
-    // avval navbatdan o‘chirib tashla (qayta bossa)
+    // qayta bossa avval navbatdan chiqar
     removeFromQueues(socket.id);
 
     // match bormi?
     if (waiting[level].length > 0) {
       const peer = waiting[level].shift();
 
-      // bir-biriga peer id yuboramiz (keyin WebRTC uchun kerak bo‘ladi)
+      // bir-biriga peer id yuboramiz (keyin WebRTC uchun kerak)
       socket.emit("matched", { peerId: peer.id, level });
       peer.emit("matched", { peerId: socket.id, level });
     } else {
@@ -59,7 +67,6 @@ io.on("connection", (socket) => {
   });
 });
 
-const PORT = 3000;
 server.listen(PORT, () => {
-  console.log(`✅ Server: http://localhost:${PORT}`);
+  console.log(`✅ Server running: http://localhost:${PORT}`);
 });
