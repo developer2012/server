@@ -1,3 +1,4 @@
+const fs = require("fs");
 const path = require("path");
 const express = require("express");
 const http = require("http");
@@ -5,30 +6,37 @@ const { Server } = require("socket.io");
 
 const app = express();
 const server = http.createServer(app);
-
-// Render or other hosting uses dynamic PORT
 const PORT = process.env.PORT || 3000;
 
-// Socket.io (Render’da ham ishlaydi)
-const io = new Server(server, {
-  cors: { origin: "*" } // keyin xavfsizlik uchun aniq domain qilamiz
-});
+const io = new Server(server, { cors: { origin: "*" } });
 
-// ✅ Frontendni serverdan beramiz
-const clientPath = path.join(__dirname, "..", "client");
-app.use(express.static(clientPath));
+// ✅ Client pathni har xil holatda topib oladi
+function resolveClientPath() {
+  const candidates = [
+    path.join(__dirname, "..", "client"),          // english-chat/client  (seniki)
+    path.join(__dirname, "client"),                // server/client (agar shunday bo‘lsa)
+    path.join(process.cwd(), "client"),            // Render root/client
+    path.join(process.cwd(), "..", "client")       // Render root/../client
+  ];
 
-// ✅ Root route: index.html qaytaradi
-app.get("/", (req, res) => {
-  res.sendFile(path.join(clientPath, "index.html"));
-});
+  for (const p of candidates) {
+    if (fs.existsSync(path.join(p, "index.html"))) return p;
+  }
+  return null;
+}
 
-// ✅ Health check (Render uchun foydali)
-app.get("/health", (req, res) => {
-  res.json({ ok: true });
-});
+const clientPath = resolveClientPath();
 
-// Waiting queue
+if (clientPath) {
+  console.log("✅ Client found at:", clientPath);
+  app.use(express.static(clientPath));
+  app.get("/", (req, res) => res.sendFile(path.join(clientPath, "index.html")));
+} else {
+  console.log("❌ Client NOT found");
+  app.get("/", (req, res) => res.status(404).send("Client not found. Make sure /client is in the repo."));
+}
+
+// Queue
 const waiting = { A1: [], A2: [], B1: [], B2: [], C1: [], C2: [] };
 
 function removeFromQueues(socketId) {
@@ -41,14 +49,10 @@ io.on("connection", (socket) => {
   socket.on("find", (level) => {
     if (!waiting[level]) return;
 
-    // qayta bossa avval navbatdan chiqar
     removeFromQueues(socket.id);
 
-    // match bormi?
     if (waiting[level].length > 0) {
       const peer = waiting[level].shift();
-
-      // bir-biriga peer id yuboramiz (keyin WebRTC uchun kerak)
       socket.emit("matched", { peerId: peer.id, level });
       peer.emit("matched", { peerId: socket.id, level });
     } else {
@@ -62,12 +66,9 @@ io.on("connection", (socket) => {
     socket.emit("cancelled");
   });
 
-  socket.on("disconnect", () => {
-    removeFromQueues(socket.id);
-  });
+  socket.on("disconnect", () => removeFromQueues(socket.id));
 });
 
 server.listen(PORT, () => {
   console.log(`✅ Server running: http://localhost:${PORT}`);
 });
-
