@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>English Match — Levels</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <h1>English Voice Match</h1>
+    <p class="subtitle">Darajani tanlang → mos odam chiqsa ulanadi</p>
+
+    <div class="levels">
+      <button class="lvl a1" data-level="A1">A1</button>
+      <button class="lvl a2" data-level="A2">A2</button>
+      <button class="lvl b1" data-level="B1">B1</button>
+      <button class="lvl b2" data-level="B2">B2</button>
+      <button class="lvl c1" data-level="C1">C1</button>
+      <button class="lvl c2" data-level="C2">C2</button>
+    </div>
+
+    <div id="status" class="status">Darajani tanlang.</div>
+
+    <div id="voiceBox" class="voice-box">
+      <div class="voice-indicator"></div>
+      <div class="voice-text">🎤 Mikrofon yoqildi (test)</div>
+    </div>
+
+    <button id="cancelBtn" class="next-btn">Cancel / Next</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
