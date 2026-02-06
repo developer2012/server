@@ -1,5 +1,5 @@
 {
-  "name": "english-chat-server",
+  "name": "english-chat",
   "version": "1.0.0",
   "main": "index.js",
   "type": "commonjs",
